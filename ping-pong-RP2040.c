@@ -165,7 +165,7 @@ void draw_game(struct GameState* state) {
     // Draw scores
     char score_str[16];
     snprintf(score_str, sizeof(score_str), "%d - %d", state->player_score, state->ai_score);
-    //DESENHA PLACAR//ssd1306_draw_string(&disp, score_str, WIDTH/2 - 16, 0);
+    ssd1306_draw_string(&disp, score_str, WIDTH/2 - 16, 0);
     
     ssd1306_send_data(&disp);  // Update display
 }
