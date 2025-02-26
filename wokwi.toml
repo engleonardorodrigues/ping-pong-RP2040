@@ -1,0 +1,4 @@
+[wokwi]
+version = 1
+firmware = 'build/ping-pong-RP2040.uf2'
+elf = 'build/ping-pong-RP2040.elf'

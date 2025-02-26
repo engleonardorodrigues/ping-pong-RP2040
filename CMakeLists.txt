@@ -35,7 +35,10 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(ping-pong-RP2040 ping-pong-RP2040.c )
+add_executable(ping-pong-RP2040 
+       ping-pong-RP2040.c 
+       libs/ssd1306/ssd1306.c
+       )
 
 pico_set_program_name(ping-pong-RP2040 "ping-pong-RP2040")
 pico_set_program_version(ping-pong-RP2040 "0.1")
@@ -46,7 +49,11 @@ pico_enable_stdio_usb(ping-pong-RP2040 0)
 
 # Add the standard library to the build
 target_link_libraries(ping-pong-RP2040
-        pico_stdlib)
+        pico_stdlib
+        hardware_i2c
+        hardware_adc
+
+        )
 
 # Add the standard include files to the build
 target_include_directories(ping-pong-RP2040 PRIVATE
@@ -55,7 +62,7 @@ target_include_directories(ping-pong-RP2040 PRIVATE
 
 # Add any user requested libraries
 target_link_libraries(ping-pong-RP2040 
-        
+    
         )
 
 pico_add_extra_outputs(ping-pong-RP2040)
