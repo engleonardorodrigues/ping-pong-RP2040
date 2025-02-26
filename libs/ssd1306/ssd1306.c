@@ -1,3 +1,4 @@
+
 #include "ssd1306.h"
 #include "font.h"
 
@@ -142,7 +143,6 @@ void ssd1306_line(ssd1306_t *ssd, uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1
     }
 }
 
-
 void ssd1306_hline(ssd1306_t *ssd, uint8_t x0, uint8_t x1, uint8_t y, bool value) {
   for (uint8_t x = x0; x <= x1; ++x)
     ssd1306_pixel(ssd, x, y, value);
@@ -153,38 +153,43 @@ void ssd1306_vline(ssd1306_t *ssd, uint8_t x, uint8_t y0, uint8_t y1, bool value
     ssd1306_pixel(ssd, x, y, value);
 }
 
-// Add clear function implementation
-void ssd1306_clear(ssd1306_t *ssd) {
-  ssd1306_fill(ssd, false);
-  ssd1306_send_data(ssd);
-}
 
-// Função para desenhar um caractere
+// Função para desenhar um caractere no display SSD1306
 void ssd1306_draw_char(ssd1306_t *ssd, char c, uint8_t x, uint8_t y)
 {
-  uint16_t index = 0;
-  char ver=c;
-  if (c >= 'A' && c <= 'Z')
-  {
-    index = (c - 'A' + 11) * 8; // Para letras maiúsculas
-  }else  if (c >= '0' && c <= '9')
-  {
-    index = (c - '0' + 1) * 8; // Adiciona o deslocamento necessário
-  }
-  else  if (c >= 'a' && c <= 'z')
-  {
-     index = (c - 'a' + 11) * 8; // Para letras minusculas
-  }
-  
-  
-  for (uint8_t i = 0; i < 8; ++i)
-  {
-    uint8_t line = font[index + i];
-    for (uint8_t j = 0; j < 8; ++j)
+    uint16_t index = 0;
+
+    // Verifica se é uma letra maiúscula (A-Z)
+    if (c >= 'A' && c <= 'Z')
     {
-      ssd1306_pixel(ssd, x + i, y + j, line & (1 << j));
+        index = (c - 'A' + 11) * 8; // Offset para letras maiúsculas
     }
-  }
+    // Verifica se é uma letra minúscula (a-z)
+    else if (c >= 'a' && c <= 'z')
+    {
+        index = (c - 'a' + 37) * 8; // Offset para letras minúsculas (após as maiúsculas)
+    }
+    // Verifica se é um dígito (0-9)
+    else if (c >= '0' && c <= '9')
+    {
+        index = (c - '0' + 1) * 8; // Offset para dígitos
+    }
+    else
+    {
+        // Se o caractere não for suportado, exibe um espaço (ou outro caractere padrão)
+        index = 0;
+    }
+
+    // Desenha o caractere no display, assumindo uma matriz de 8x8 pixels por caractere
+    for (uint8_t i = 0; i < 8; ++i)
+    {
+        uint8_t line = font[index + i];
+        for (uint8_t j = 0; j < 8; ++j)
+        {
+            // Verifica se o bit j de 'line' está setado e desenha o pixel
+            ssd1306_pixel(ssd, x + i, y + j, (line & (1 << j)) ? 1 : 0);
+        }
+    }
 }
 
 // Função para desenhar uma string
