@@ -66,7 +66,7 @@ void initialize_game(struct GameState* state) {
     state->ai_y = (HEIGHT - PADDLE_HEIGHT) / 2;
     state->ball_x = WIDTH / 2;
     state->ball_y = HEIGHT / 2;
-    state->ball_dx = BALL_SPEED;
+    state->ball_dx = -BALL_SPEED;
     state->ball_dy = BALL_SPEED;
     state->ai_dir = 1;
     state->player_score = 0;
@@ -76,9 +76,26 @@ void initialize_game(struct GameState* state) {
 void read_joystick(struct GameState* state) {
     adc_select_input(1); // Read from ADC channel 1 (GPIO27)
     uint16_t adc_value = adc_read();
-    state->player_y = (adc_value * (HEIGHT - PADDLE_HEIGHT)) / 4096;
+    //state->player_y = (adc_value * (HEIGHT - PADDLE_HEIGHT)) / 4096;
+    state->player_y = (HEIGHT - PADDLE_HEIGHT) - (adc_value * (HEIGHT - PADDLE_HEIGHT)) / 4096;
+
 }
 
+void update_ai(struct GameState* state) {
+    // Centraliza a raquete da IA na posição da bola
+    if (state->ai_y + PADDLE_HEIGHT / 2 < state->ball_y) {
+        state->ai_y += PADDLE_SPEED;
+    } else if (state->ai_y + PADDLE_HEIGHT / 2 > state->ball_y) {
+        state->ai_y -= PADDLE_SPEED;
+    }
+
+    // Mantém a raquete dentro dos limites da tela
+    if (state->ai_y < 0) state->ai_y = 0;
+    if (state->ai_y > HEIGHT - PADDLE_HEIGHT) state->ai_y = HEIGHT - PADDLE_HEIGHT;
+}
+
+//rotina move a raquete da ia de maneira aleatória
+/*
 void update_ai(struct GameState* state) {
     // Simple AI with random direction changes
     if (rand() % 100 < 2) { // 2% chance to change direction
@@ -91,7 +108,7 @@ void update_ai(struct GameState* state) {
     if (state->ai_y < 0) state->ai_y = 0;
     if (state->ai_y > HEIGHT - PADDLE_HEIGHT) state->ai_y = HEIGHT - PADDLE_HEIGHT;
 }
-
+*/
 void update_ball(struct GameState* state) {
     // Update ball position
     state->ball_x += state->ball_dx;
@@ -134,13 +151,21 @@ void draw_game(struct GameState* state) {
     ssd1306_rect(&disp, state->player_y, 0, PADDLE_WIDTH, PADDLE_HEIGHT, true, true);
     ssd1306_rect(&disp, state->ai_y, WIDTH - PADDLE_WIDTH, PADDLE_WIDTH, PADDLE_HEIGHT, true, true);
     
+    // Draw bordas do campo
+    ssd1306_rect(&disp, 0, 0, WIDTH, HEIGHT, true, false);
+
+    // Desenha a linha tracejada vertical no centro
+    for (int x = 0; x < WIDTH; x += 8) {
+        ssd1306_rect(&disp, x, HEIGHT / 1 - 1, 3, 2, true, true); // Linha horizontal (para testar)
+    }
+
     // Draw ball
     ssd1306_rect(&disp, state->ball_y, state->ball_x, BALL_SIZE, BALL_SIZE, true, true);
     
     // Draw scores
     char score_str[16];
     snprintf(score_str, sizeof(score_str), "%d - %d", state->player_score, state->ai_score);
-    ssd1306_draw_string(&disp, score_str, WIDTH/2 - 16, 0);
+    //DESENHA PLACAR//ssd1306_draw_string(&disp, score_str, WIDTH/2 - 16, 0);
     
     ssd1306_send_data(&disp);  // Update display
 }
