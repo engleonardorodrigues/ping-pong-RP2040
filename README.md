@@ -3,6 +3,10 @@
 ## Descrição
 Este projeto é uma implementação do jogo de Ping Pong utilizando um **Raspberry Pi Pico W** e um **display OLED SSD1306**. O jogador controla a raquete esquerda usando um **joystick analógico**, enquanto a raquete direita é controlada por uma **IA básica**. O objetivo é rebater a bola e marcar pontos, com a dificuldade aumentando progressivamente.
 
+<p align="center">
+  <img src="images/PING-PONG.gif" alt="Gameplay do jogo">
+</p>
+
 ## Recursos Principais
 - Uso do **Raspberry Pi Pico W** como microcontrolador principal.
 - Controle da raquete através de um **joystick analógico**.
@@ -58,7 +62,7 @@ Para compilar e rodar o projeto, siga os passos abaixo:
 - O jogo reinicia com a bola no centro após cada ponto.
 
 
-[Vídeo Demonstrativo](COLOCAR LINK DO VÍDEO)
+[Vídeo Demonstrativo](https://youtu.be/lsnwWgYrTBc)
 
 ## 📩 Contato
 Caso tenha dúvidas ou sugestões, entre em contato:
