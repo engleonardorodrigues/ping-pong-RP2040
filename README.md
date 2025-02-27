@@ -7,6 +7,10 @@ Este projeto é uma implementação do jogo de Ping Pong utilizando um **Raspber
   <img src="images/PING-PONG.gif" alt="Gameplay do jogo">
 </p>
 
+## Vídeo Demonstrativo
+
+[Vídeo Demonstrativo](https://youtu.be/lsnwWgYrTBc)
+
 ## Recursos Principais
 - Uso do **Raspberry Pi Pico W** como microcontrolador principal.
 - Controle da raquete através de um **joystick analógico**.
@@ -61,9 +65,7 @@ Para compilar e rodar o projeto, siga os passos abaixo:
 - Sempre que um jogador falha ao rebater a bola, o adversário ganha um ponto.
 - O jogo reinicia com a bola no centro após cada ponto.
 
-## Vídeo Demonstrativo
 
-[Vídeo Demonstrativo](https://youtu.be/lsnwWgYrTBc)
 
 ## 📩 Contato
 Caso tenha dúvidas ou sugestões, entre em contato:
