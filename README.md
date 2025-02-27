@@ -61,6 +61,7 @@ Para compilar e rodar o projeto, siga os passos abaixo:
 - Sempre que um jogador falha ao rebater a bola, o adversário ganha um ponto.
 - O jogo reinicia com a bola no centro após cada ponto.
 
+## Vídeo Demonstrativo
 
 [Vídeo Demonstrativo](https://youtu.be/lsnwWgYrTBc)
 
