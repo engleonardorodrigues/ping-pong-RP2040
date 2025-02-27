@@ -7,184 +7,193 @@
 #include "libs/ssd1306/ssd1306.h"
 #include "libs/ssd1306/font.h"
 
-// Screen dimensions
-#define WIDTH 128
-#define HEIGHT 64
+// Dimensões da tela
+#define LARGURA 128
+#define ALTURA 64
 
-// Paddle dimensions
-#define PADDLE_WIDTH 4
-#define PADDLE_HEIGHT 16
-#define PADDLE_SPEED 2
+// Dimensões da raquete
+#define LARGURA_RAQUETE 4
+#define ALTURA_RAQUETE 16
+#define VELOCIDADE_RAQUETE 2
 
-// Ball parameters
-#define BALL_SIZE 4
-#define BALL_SPEED 2
+// Parâmetros da bola
+#define TAMANHO_BOLA 4
+#define VELOCIDADE_BOLA 2
 
-// GPIO definitions
-#define SDA_PIN 14
-#define SCL_PIN 15
+// Definições de GPIO
+#define PINO_SDA 14
+#define PINO_SCL 15
 #define JOYSTICK_Y 27
 
-// Display initialization
+// Inicialização do display
 ssd1306_t disp;
 
-// Game state structure
-struct GameState {
-    // Player paddle (left)
-    int player_y;
+// Estrutura do estado do jogo
+struct EstadoJogo {
+    // Raquete do jogador (esquerda)
+    int jogador_y;
     
-    // AI paddle (right)
-    int ai_y;
-    int ai_dir;
+    // Raquete da IA (direita)
+    int ia_y;
+    int direcao_ia;
     
-    // Ball position and direction
-    int ball_x;
-    int ball_y;
-    int ball_dx;
-    int ball_dy;
+    // Posição e direção da bola
+    int bola_x;
+    int bola_y;
+    int bola_dx;
+    int bola_dy;
     
-    // Score
-    int player_score;
-    int ai_score;
+    // Pontuação
+    int pontuacao_jogador;
+    int pontuacao_ia;
 };
 
-void initialize_display() {
+void inicializar_display() {
     i2c_init(i2c1, 400000);
-    gpio_set_function(SDA_PIN, GPIO_FUNC_I2C);
-    gpio_set_function(SCL_PIN, GPIO_FUNC_I2C);
-    gpio_pull_up(SDA_PIN);
-    gpio_pull_up(SCL_PIN);
+    gpio_set_function(PINO_SDA, GPIO_FUNC_I2C);
+    gpio_set_function(PINO_SCL, GPIO_FUNC_I2C);
+    gpio_pull_up(PINO_SDA);
+    gpio_pull_up(PINO_SCL);
 
-    ssd1306_init(&disp, WIDTH, HEIGHT, false, 0x3C, i2c1);
+    ssd1306_init(&disp, LARGURA, ALTURA, false, 0x3C, i2c1);
     ssd1306_config(&disp);
-    ssd1306_fill(&disp, false);  // Use fill instead of clear
-    ssd1306_send_data(&disp);     // Use send_data instead of show
+    ssd1306_fill(&disp, false);
+    ssd1306_send_data(&disp);
 }
 
-void initialize_game(struct GameState* state) {
-    state->player_y = (HEIGHT - PADDLE_HEIGHT) / 2;
-    state->ai_y = (HEIGHT - PADDLE_HEIGHT) / 2;
-    state->ball_x = WIDTH / 2;
-    state->ball_y = HEIGHT / 2;
-    state->ball_dx = -BALL_SPEED;
-    state->ball_dy = BALL_SPEED;
-    state->ai_dir = 1;
-    state->player_score = 0;
-    state->ai_score = 0;
+void inicializar_jogo(struct EstadoJogo* estado) {
+    estado->jogador_y = (ALTURA - ALTURA_RAQUETE) / 2;
+    estado->ia_y = (ALTURA - ALTURA_RAQUETE) / 2;
+    estado->bola_x = LARGURA / 2;
+    estado->bola_y = ALTURA / 2;
+    estado->bola_dx = -VELOCIDADE_BOLA;
+    estado->bola_dy = VELOCIDADE_BOLA;
+    estado->direcao_ia = 1;
+    estado->pontuacao_jogador = 0;
+    estado->pontuacao_ia = 0;
 }
 
-void read_joystick(struct GameState* state) {
-    adc_select_input(1); // Read from ADC channel 1 (GPIO27)
-    uint16_t adc_value = adc_read();
-    //state->player_y = (adc_value * (HEIGHT - PADDLE_HEIGHT)) / 4096;
-    state->player_y = (HEIGHT - PADDLE_HEIGHT) - (adc_value * (HEIGHT - PADDLE_HEIGHT)) / 4096;
-
+void ler_joystick(struct EstadoJogo* estado) {
+    adc_select_input(1);
+    uint16_t valor_adc = adc_read();
+    estado->jogador_y = (ALTURA - ALTURA_RAQUETE) - (valor_adc * (ALTURA - ALTURA_RAQUETE)) / 4096;
 }
 
-void update_ai(struct GameState* state) {
-    // Centraliza a raquete da IA na posição da bola
-    if (state->ai_y + PADDLE_HEIGHT / 2 < state->ball_y) {
-        state->ai_y += PADDLE_SPEED;
-    } else if (state->ai_y + PADDLE_HEIGHT / 2 > state->ball_y) {
-        state->ai_y -= PADDLE_SPEED;
+void atualizar_ia(struct EstadoJogo* estado) {
+    if (estado->ia_y + ALTURA_RAQUETE / 2 < estado->bola_y) {
+        estado->ia_y += VELOCIDADE_RAQUETE;
+    } else if (estado->ia_y + ALTURA_RAQUETE / 2 > estado->bola_y) {
+        estado->ia_y -= VELOCIDADE_RAQUETE;
     }
 
-    // Mantém a raquete dentro dos limites da tela
-    if (state->ai_y < 0) state->ai_y = 0;
-    if (state->ai_y > HEIGHT - PADDLE_HEIGHT) state->ai_y = HEIGHT - PADDLE_HEIGHT;
+    if (estado->ia_y < 0) estado->ia_y = 0;
+    if (estado->ia_y > ALTURA - ALTURA_RAQUETE) estado->ia_y = ALTURA - ALTURA_RAQUETE;
 }
 
-//rotina move a raquete da ia de maneira aleatória
-/*
-void update_ai(struct GameState* state) {
-    // Simple AI with random direction changes
-    if (rand() % 100 < 2) { // 2% chance to change direction
-        state->ai_dir = (rand() % 2) * 2 - 1;
-    }
-    
-    state->ai_y += state->ai_dir * PADDLE_SPEED;
-    
-    // Keep AI paddle within bounds
-    if (state->ai_y < 0) state->ai_y = 0;
-    if (state->ai_y > HEIGHT - PADDLE_HEIGHT) state->ai_y = HEIGHT - PADDLE_HEIGHT;
-}
-*/
-void update_ball(struct GameState* state) {
-    // Update ball position
-    state->ball_x += state->ball_dx;
-    state->ball_y += state->ball_dy;
+void atualizar_bola(struct EstadoJogo* estado) {
+    estado->bola_x += estado->bola_dx;
+    estado->bola_y += estado->bola_dy;
 
-    // Top/bottom collision
-    if (state->ball_y <= 0 || state->ball_y >= HEIGHT - BALL_SIZE) {
-        state->ball_dy *= -1;
+    if (estado->bola_y <= 0 || estado->bola_y >= ALTURA - TAMANHO_BOLA) {
+        estado->bola_dy *= -1;
     }
 
-    // Player paddle collision
-    if (state->ball_x <= PADDLE_WIDTH && 
-        state->ball_y + BALL_SIZE >= state->player_y && 
-        state->ball_y <= state->player_y + PADDLE_HEIGHT) {
-        state->ball_dx *= -1;
+    // Colisão com a raquete do jogador
+    if (estado->bola_x <= LARGURA_RAQUETE && 
+        estado->bola_y + TAMANHO_BOLA >= estado->jogador_y && 
+        estado->bola_y <= estado->jogador_y + ALTURA_RAQUETE) {
+        estado->bola_dx *= -1;
     }
 
-    // AI paddle collision
-    if (state->ball_x >= WIDTH - PADDLE_WIDTH - BALL_SIZE && 
-        state->ball_y + BALL_SIZE >= state->ai_y && 
-        state->ball_y <= state->ai_y + PADDLE_HEIGHT) {
-        state->ball_dx *= -1;
+    // Colisão com a raquete da IA
+    if (estado->bola_x >= LARGURA - LARGURA_RAQUETE - TAMANHO_BOLA && 
+        estado->bola_y + TAMANHO_BOLA >= estado->ia_y && 
+        estado->bola_y <= estado->ia_y + ALTURA_RAQUETE) {
+        estado->bola_dx *= -1;
     }
 
-    // Score detection
-    if (state->ball_x < 0) {
-        state->ai_score++;
-        initialize_game(state);
+    // Verificação de pontuação (mantém os pontos)
+    if (estado->bola_x < 0) {
+        estado->pontuacao_ia++;
+        // Reinicia apenas a posição da bola e raquetes
+        estado->jogador_y = (ALTURA - ALTURA_RAQUETE) / 2;
+        estado->ia_y = (ALTURA - ALTURA_RAQUETE) / 2;
+        estado->bola_x = LARGURA / 2;
+        estado->bola_y = ALTURA / 2;
+        estado->bola_dx = -VELOCIDADE_BOLA;
+        estado->bola_dy = VELOCIDADE_BOLA;
     }
-    if (state->ball_x > WIDTH) {
-        state->player_score++;
-        initialize_game(state);
+    if (estado->bola_x > LARGURA) {
+        estado->pontuacao_jogador++;
+        // Reinicia apenas a posição da bola e raquetes
+        estado->jogador_y = (ALTURA - ALTURA_RAQUETE) / 2;
+        estado->ia_y = (ALTURA - ALTURA_RAQUETE) / 2;
+        estado->bola_x = LARGURA / 2;
+        estado->bola_y = ALTURA / 2;
+        estado->bola_dx = VELOCIDADE_BOLA;
+        estado->bola_dy = VELOCIDADE_BOLA;
     }
 }
 
-void draw_game(struct GameState* state) {
-    ssd1306_fill(&disp, false);  // Clear screen
+void desenhar_tela_inicial() {
+    ssd1306_fill(&disp, false);
     
-    // Draw paddles using rect (x, y, width, height, value, fill)
-    ssd1306_rect(&disp, state->player_y, 0, PADDLE_WIDTH, PADDLE_HEIGHT, true, true);
-    ssd1306_rect(&disp, state->ai_y, WIDTH - PADDLE_WIDTH, PADDLE_WIDTH, PADDLE_HEIGHT, true, true);
+    // Primeira linha: "Embarcatech" (centralizado vertical e horizontal)
+    ssd1306_draw_string(&disp, "EMBARCATECH", (LARGURA/2) - 44, (ALTURA/2) - 10);
     
-    // Draw bordas do campo
-    ssd1306_rect(&disp, 0, 0, WIDTH, HEIGHT, true, false);
+    // Segunda linha: "Game" (centralizado abaixo da primeira linha)
+    ssd1306_draw_string(&disp, "GAME", (LARGURA/2) - 16, (ALTURA/2) + 2);
+    
+    ssd1306_send_data(&disp);
+}
 
-    // Desenha a linha tracejada vertical no centro
-    for (int x = 0; x < WIDTH; x += 8) {
-        ssd1306_rect(&disp, x, HEIGHT / 1 - 1, 3, 2, true, true); // Linha horizontal (para testar)
+void desenhar_jogo(struct EstadoJogo* estado) {
+    ssd1306_fill(&disp, false);
+    
+    // Desenha raquetes
+    ssd1306_rect(&disp, estado->jogador_y, 0, LARGURA_RAQUETE, ALTURA_RAQUETE, true, true);
+    ssd1306_rect(&disp, estado->ia_y, LARGURA - LARGURA_RAQUETE, LARGURA_RAQUETE, ALTURA_RAQUETE, true, true);
+    
+    // Desenha bordas do campo
+    ssd1306_rect(&disp, 0, 0, LARGURA, ALTURA, true, false);
+
+    // Linha central tracejada
+    for (int x = 0; x < LARGURA; x += 8) {
+        ssd1306_rect(&disp, x, ALTURA / 1 - 1, 3, 2, true, true);
     }
 
-    // Draw ball
-    ssd1306_rect(&disp, state->ball_y, state->ball_x, BALL_SIZE, BALL_SIZE, true, true);
+    // Desenha bola
+    ssd1306_rect(&disp, estado->bola_y, estado->bola_x, TAMANHO_BOLA, TAMANHO_BOLA, true, true);
     
-    // Draw scores
-    char score_str[16];
-    snprintf(score_str, sizeof(score_str), "%d - %d", state->player_score, state->ai_score);
-    ssd1306_draw_string(&disp, score_str, WIDTH/2 - 16, 0);
+    // Desenha placar centralizado e mais abaixo
+    char placar[16];
+    snprintf(placar, sizeof(placar), "%d - %d", estado->pontuacao_jogador, estado->pontuacao_ia);
     
-    ssd1306_send_data(&disp);  // Update display
+    // Ajuste na posição Y do placar (5 pixels abaixo do topo)
+    ssd1306_draw_string(&disp, placar, LARGURA/2 - 16, 5);
+    
+    ssd1306_send_data(&disp);
 }
 
 int main() {
     stdio_init_all();
-    initialize_display();
+    inicializar_display();
     adc_init();
     adc_gpio_init(JOYSTICK_Y);
+
+    // Mostra tela inicial por 2 segundos
+    desenhar_tela_inicial();
+    sleep_ms(5000);
     
-    struct GameState state;
-    initialize_game(&state);
+    struct EstadoJogo estado;
+    inicializar_jogo(&estado);
     
     while (1) {
-        read_joystick(&state);
-        update_ai(&state);
-        update_ball(&state);
-        draw_game(&state);
-        sleep_ms(16); // ~60 FPS
+        ler_joystick(&estado);
+        atualizar_ia(&estado);
+        atualizar_bola(&estado);
+        desenhar_jogo(&estado);
+        sleep_ms(16);
     }
     
     return 0;
